@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>勤怠・報告</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:      #1a1a2e;
+      --ink-sub:  #5a5a7a;
+      --surface:  #ffffff;
+      --bg:       #F5F5F3;
+      --line:     #e2e2ec;
+      --gray-hdr: #AEADA8;
+      --purp:     #C4A8D8;
+      --purp-lt:  #F5EEF9;
+      --purp-brd: #DCC8EC;
+      --purp-txt: #7A5A96;
+      --teal:     #7CCF50;
+      --teal-lt:  #F0FAE8;
+      --teal-brd: #C0E8A0;
+      --teal-txt: #3A7020;
+      --ok:       #2ec4b6;
+      --ng:       #e63946;
+      --radius:   14px;
+    }
+    html, body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      font-size: 16px;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .header {
+      background: var(--gray-hdr);
+      color: #fff;
+      padding: 22px 20px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-label { font-size: 12px; letter-spacing: .12em; opacity: .85; text-transform: uppercase; margin-bottom: 4px; }
+    .header-title { font-size: 22px; font-weight: 700; letter-spacing: .03em; }
+    main { padding: 16px 16px 48px; max-width: 520px; margin: 0 auto; }
+    .intro { font-size: 13px; color: var(--ink-sub); margin-bottom: 14px; }
+
+    /* NAV */
+    .nav-card {
+      background: var(--surface);
+      border: 0.5px solid var(--line);
+      border-radius: var(--radius);
+      padding: 15px 14px;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; margin-bottom: 10px;
+      transition: border-color .15s;
+      user-select: none;
+    }
+    .nav-card.open-purp { border: 1.5px solid var(--purp); }
+    .nav-card.open-teal { border: 1.5px solid var(--teal); }
+    .nav-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 20px;
+    }
+    .nav-icon.purp { background: var(--purp); }
+    .nav-icon.teal { background: var(--teal); }
+    .nav-text { flex: 1; }
+    .nav-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+    .nav-sub   { font-size: 12px; color: var(--ink-sub); margin-top: 2px; }
+    .nav-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 99px;
+      margin-left: 6px; font-weight: 600; vertical-align: middle;
+    }
+    .badge-purp { background: var(--purp-lt); color: var(--purp-txt); }
+    .badge-teal { background: var(--teal-lt); color: var(--teal-txt); }
+    .nav-chev { margin-left: auto; font-size: 18px; color: var(--ink-sub); transition: transform .2s; flex-shrink: 0; }
+    .nav-chev.open { transform: rotate(180deg); }
+
+    /* PANEL */
+    .panel { display: none; margin-bottom: 10px; }
+    .panel.visible { display: block; }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 0.5px solid var(--line);
+      padding: 16px 15px;
+    }
+    .card.purp { border-color: var(--purp-brd); }
+    .card.teal { border-color: var(--teal-brd); }
+    .card-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+    .card-title.purp { color: var(--purp); }
+    .card-title.teal { color: var(--teal); }
+
+    /* LOGIN BADGE */
+    .login-badge {
+      border-radius: 10px; padding: 8px 11px;
+      font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 14px;
+    }
+    .login-badge.purp { background: var(--purp-lt); border: 0.5px solid var(--purp-brd); color: var(--purp-txt); }
+    .login-badge.teal { background: var(--teal-lt); border: 0.5px solid var(--teal-brd); color: var(--teal-txt); }
+    .login-badge.err  { background: #fff0f1; border: 0.5px solid #f5c4c4; color: var(--ng); }
+
+    /* FIELD */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: var(--ink-sub); margin-bottom: 6px;
+    }
+    label .req { color: var(--ng); margin-left: 3px; }
+    label .sub { font-size: 11px; font-weight: 500; margin-left: 5px; }
+    label .sub.teal { color: var(--teal); }
+
+    input[type="date"], input[type="time"], input[type="text"], input[type="number"] {
+      width: 100%; padding: 13px 11px;
+      border: 1.5px solid var(--line);
+      border-radius: 10px; font-size: 16px; font-family: inherit;
+      color: var(--ink); background: var(--surface);
+      appearance: none; -webkit-appearance: none;
+      transition: border-color .15s; outline: none;
+    }
+    input:focus { border-color: var(--purp); }
+    input.teal-focus:focus { border-color: var(--teal); }
+    input.has-error { border-color: var(--ng) !important; }
+
+    .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* HINT */
+    .hint { font-size: 12px; margin-bottom: 8px; line-height: 1.6; }
+    .hint.purp { color: var(--purp-txt); }
+
+    /* RADIO */
+    .radio-group { display: flex; gap: 8px; }
+    .radio-btn { flex: 1; position: relative; }
+    .radio-btn input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .radio-btn label {
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px 6px;
+      border: 1.5px solid var(--line); border-radius: 10px;
+      font-size: 15px; font-weight: 600; color: var(--ink-sub);
+      cursor: pointer; transition: all .15s; margin: 0; background: var(--surface);
+    }
+    .radio-btn input:checked + label.purp-sel { border-color: var(--purp); background: var(--purp-lt); color: var(--purp-txt); }
+    .radio-btn input:checked + label.teal-sel { border-color: var(--teal); background: var(--teal-lt); color: var(--teal-txt); }
+
+    /* CHECK3 */
+    .check3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .chk-opt {
+      border: 1.5px solid var(--line); border-radius: 10px;
+      padding: 11px 5px; font-size: 12px; font-weight: 600;
+      color: var(--ink-sub); text-align: center; cursor: pointer;
+      transition: all .15s; background: var(--surface); line-height: 1.4;
+    }
+    .chk-opt.sel-teal { border-color: var(--teal); background: var(--teal-lt); color: var(--teal-txt); }
+
+    /* COND BLOCK */
+    .cond-block {
+      background: var(--purp-lt); border: 0.5px solid var(--purp-brd);
+      border-radius: 10px; padding: 11px;
+      margin-top: 10px; display: none; flex-direction: column; gap: 10px;
+    }
+    .cond-block.visible { display: flex; }
+    .cond-title { font-size: 12px; font-weight: 700; color: var(--purp-txt); margin-bottom: 2px; }
+
+    /* ERROR */
+    .field-error { font-size: 12px; color: var(--ng); margin-top: 5px; display: none; }
+    .field-error.visible { display: block; }
+    .global-error {
+      display: none; background: #fff0f1; border: 1.5px solid var(--ng);
+      border-radius: 10px; padding: 11px 13px;
+      font-size: 13px; color: var(--ng); font-weight: 600; margin-bottom: 12px;
+    }
+    .global-error.visible { display: block; }
+
+    /* SUBMIT */
+    .submit-btn {
+      width: 100%; padding: 17px; border: none; border-radius: var(--radius);
+      font-size: 17px; font-weight: 700; font-family: inherit;
+      letter-spacing: .04em; cursor: pointer;
+      transition: opacity .15s; color: #fff; margin-top: 6px;
+    }
+    .submit-btn.purp { background: var(--purp); }
+    .submit-btn.teal { background: var(--teal); }
+    .submit-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    /* SUCCESS */
+    #successScreen {
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 70vh; text-align: center; padding: 32px 24px;
+    }
+    #successScreen.visible { display: flex; }
+    .success-icon {
+      width: 88px; height: 88px; background: var(--ok);
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; margin-bottom: 28px;
+    }
+    .success-icon svg { width: 44px; height: 44px; }
+    .success-title { font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 12px; }
+    .success-sub { font-size: 16px; color: var(--ink-sub); line-height: 1.8; }
+
+    /* LOADING */
+    #loadingScreen {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; flex-direction: column; gap: 16px;
+    }
+    #loadingScreen.hidden { display: none; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--line); border-top-color: var(--gray-hdr);
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 15px; color: var(--ink-sub); }
+  </style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="spinner"></div>
+  <div class="loading-text">読み込み中…</div>
+</div>
+
+<div id="successScreen">
+  <div class="success-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+  <div class="success-title">送信完了しました</div>
+  <div id="successSub" class="success-sub">ご報告ありがとうございます！</div>
+</div>
+
+<div id="formWrap">
+  <header class="header">
+    <div class="header-label">Event Staff</div>
+    <div class="header-title">勤怠・報告</div>
+  </header>
+
+  <main>
+    <p class="intro">報告する種類を選んでください</p>
+
+    <!-- ① 他案件勤怠 -->
+    <div class="nav-card" id="nav1" onclick="togglePanel(1)">
+      <div class="nav-icon purp">📝</div>
+      <div class="nav-text">
+        <div class="nav-title">他案件 勤怠報告<span class="nav-badge badge-purp" id="badge1" style="display:none">選択中</span></div>
+        <div class="nav-sub">JT以外の案件の勤怠を報告</div>
+      </div>
+      <div class="nav-chev" id="chev1">▼</div>
+    </div>
+
+    <div class="panel" id="panel1">
+      <div class="card purp">
+        <div class="card-title purp">勤務情報</div>
+        <div class="login-badge purp" id="loginBadge1">
+          <span>👤</span><span id="loginName1">読み込み中…</span>
+        </div>
+        <div id="globalError1" class="global-error">入力に不備があります。確認してください。</div>
+
+        <div class="field">
+          <label for="f1_date">勤務日<span class="req">*</span></label>
+          <input type="date" id="f1_date" class="teal-focus">
+          <div class="field-error" id="err1_date">勤務日を選択してください</div>
+        </div>
+
+        <div class="time-row">
+          <div class="field">
+            <label for="f1_start">開始時間<span class="req">*</span></label>
+            <input type="time" id="f1_start">
+            <div class="field-error" id="err1_start">入力してください</div>
+          </div>
+          <div class="field">
+            <label for="f1_end">終了時間<span class="req">*</span></label>
+            <input type="time" id="f1_end">
+            <div class="field-error" id="err1_end">入力してください</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>交通費<span class="req">*</span></label>
+          <div class="hint purp">案件連絡時に交通費支給ありの場合のみ、ありでご入力ください</div>
+          <div class="radio-group">
+            <div class="radio-btn">
+              <input type="radio" name="f1_fare" id="f1_fare_no" value="なし" checked onchange="onFareChange()">
+              <label for="f1_fare_no" class="purp-sel">なし</label>
+            </div>
+            <div class="radio-btn">
+              <input type="radio" name="f1_fare" id="f1_fare_yes" value="あり" onchange="onFareChange()">
+              <label for="f1_fare_yes" class="purp-sel">あり</label>
+            </div>
+          </div>
+          <div class="field-error" id="err1_fare">交通費を選択してください</div>
+
+          <div class="cond-block" id="fareBlock">
+            <div class="cond-title">種別を選んでください</div>
+            <div class="radio-group">
+              <div class="radio-btn">
+                <input type="radio" name="f1_fare_type" id="ft_jitsu" value="実費" onchange="onFareTypeChange()">
+                <label for="ft_jitsu" class="purp-sel">実費</label>
+              </div>
+              <div class="radio-btn">
+                <input type="radio" name="f1_fare_type" id="ft_ichi" value="一律" onchange="onFareTypeChange()">
+                <label for="ft_ichi" class="purp-sel">一律</label>
+              </div>
+            </div>
+            <div id="jitsuBlock" style="display:none;flex-direction:column;gap:10px;">
+              <div class="field" style="margin-bottom:0;">
+                <label style="font-size:12px;">区間（駅〜駅）</label>
+                <input type="text" id="f1_route" placeholder="例）大阪駅〜梅田駅" style="font-size:14px;padding:10px 11px;">
+              </div>
+              <div class="field" style="margin-bottom:0;">
+                <label style="font-size:12px;">料金（円）</label>
+                <input type="number" id="f1_amount" placeholder="例）180" style="font-size:14px;padding:10px 11px;">
+              </div>
+            </div>
+            <div id="ichiBlock" style="display:none;">
+              <div class="field" style="margin-bottom:0;">
+                <label style="font-size:12px;">料金（円）</label>
+                <input type="number" id="f1_amount2" placeholder="例）500" style="font-size:14px;padding:10px 11px;margin-top:4px;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="submit-btn purp" id="submitBtn1" type="button" onclick="submitForm1()">送信する</button>
+      </div>
+    </div>
+
+    <!-- ② 関西JT委託D -->
+    <div class="nav-card" id="nav2" onclick="togglePanel(2)">
+      <div class="nav-icon teal">🚬</div>
+      <div class="nav-text">
+        <div class="nav-title">関西JT 委託D報告<span class="nav-badge badge-teal" id="badge2" style="display:none">選択中</span></div>
+        <div class="nav-sub">備品受取・返却・運転</div>
+      </div>
+      <div class="nav-chev" id="chev2">▼</div>
+    </div>
+
+    <div class="panel" id="panel2">
+      <div class="card teal">
+        <div class="card-title teal">勤務情報</div>
+        <div class="login-badge teal" id="loginBadge2">
+          <span>👤</span><span id="loginName2">読み込み中…</span>
+        </div>
+        <div id="globalError2" class="global-error">入力に不備があります。確認してください。</div>
+
+        <div class="field">
+          <label for="f2_date">勤務日<span class="req">*</span></label>
+          <input type="date" id="f2_date" class="teal-focus">
+          <div class="field-error" id="err2_date">勤務日を選択してください</div>
+        </div>
+
+        <div class="field">
+          <label>備品の受取<span class="req">*</span></label>
+          <div class="check3">
+            <div class="chk-opt sel-teal" id="rcv1" onclick="selectRcv(1,'受け取りなし')">受け取り<br>なし</div>
+            <div class="chk-opt" id="rcv2" onclick="selectRcv(2,'レンタカーピックあり')">レンタカー<br>ピックあり</div>
+            <div class="chk-opt" id="rcv3" onclick="selectRcv(3,'レンタカーピックなし')">レンタカー<br>ピックなし</div>
+          </div>
+          <div class="field-error" id="err2_rcv">備品の受取を選択してください</div>
+        </div>
+
+        <div class="field">
+          <label>備品の返却<span class="req">*</span><span class="sub teal">事務所戻り</span></label>
+          <div class="radio-group">
+            <div class="radio-btn">
+              <input type="radio" name="f2_return" id="f2_ret_yes" value="あり" checked>
+              <label for="f2_ret_yes" class="teal-sel">あり</label>
+            </div>
+            <div class="radio-btn">
+              <input type="radio" name="f2_return" id="f2_ret_no" value="なし">
+              <label for="f2_ret_no" class="teal-sel">なし</label>
+            </div>
+          </div>
+          <div class="field-error" id="err2_return">備品の返却を選択してください</div>
+        </div>
+
+        <div class="field">
+          <label>運転<span class="req">*</span></label>
+          <div class="radio-group">
+            <div class="radio-btn">
+              <input type="radio" name="f2_drive" id="f2_drv_yes" value="あり" checked>
+              <label for="f2_drv_yes" class="teal-sel">あり</label>
+            </div>
+            <div class="radio-btn">
+              <input type="radio" name="f2_drive" id="f2_drv_no" value="なし">
+              <label for="f2_drv_no" class="teal-sel">なし</label>
+            </div>
+          </div>
+          <div class="field-error" id="err2_drive">運転を選択してください</div>
+        </div>
+
+        <button class="submit-btn teal" id="submitBtn2" type="button" onclick="submitForm2()">送信する</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const LIFF_ID = '2010311386-7tC3rJId';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbz9wVWnwaz-OtlLF6qEAm-jIU84u8DO0hKvYOfk1hn_yiHx7pkmIL0_b4xcKLzZNi9IUQ/exec';
+
+let lineUserId   = '';
+let displayName  = '';
+let resolvedName = '';
+let selectedRcv  = '受け取りなし';
+
+async function initLiff() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    const profile = await liff.getProfile();
+    lineUserId  = profile.userId;
+    displayName = profile.displayName;
+    const res  = await fetch(GAS_URL + '?action=getName&userId=' + encodeURIComponent(lineUserId));
+    const data = await res.json();
+    if (data.name) {
+      resolvedName = data.name;
+      setLoginText(resolvedName + ' としてログイン中', false);
+    } else {
+      resolvedName = displayName;
+      setLoginText(displayName + '（未登録）', true);
+    }
+  } catch (err) {
+    console.error(err);
+    lineUserId   = 'DEV_USER';
+    displayName  = 'DEV_NAME';
+    resolvedName = 'テスト太郎';
+    setLoginText(resolvedName + ' としてログイン中', false);
+  } finally {
+    document.getElementById('loadingScreen').classList.add('hidden');
+  }
+}
+
+function setLoginText(text, isErr) {
+  ['loginName1','loginName2'].forEach(id => document.getElementById(id).textContent = text);
+  if (isErr) {
+    ['loginBadge1','loginBadge2'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('purp','teal');
+      el.classList.add('err');
+    });
+  }
+}
+
+function togglePanel(n) {
+  const o = n === 1 ? 2 : 1;
+  const panel = document.getElementById('panel' + n);
+  const isOpen = panel.classList.contains('visible');
+  document.getElementById('panel' + o).classList.remove('visible');
+  document.getElementById('nav'   + o).classList.remove('open-purp','open-teal');
+  document.getElementById('chev'  + o).classList.remove('open');
+  document.getElementById('badge' + o).style.display = 'none';
+  if (isOpen) {
+    panel.classList.remove('visible');
+    document.getElementById('nav'  + n).classList.remove('open-purp','open-teal');
+    document.getElementById('chev' + n).classList.remove('open');
+    document.getElementById('badge'+ n).style.display = 'none';
+  } else {
+    panel.classList.add('visible');
+    document.getElementById('nav'  + n).classList.add(n === 1 ? 'open-purp' : 'open-teal');
+    document.getElementById('chev' + n).classList.add('open');
+    document.getElementById('badge'+ n).style.display = 'inline';
+    setTimeout(() => document.getElementById('nav' + n).scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+  }
+}
+
+function onFareChange() {
+  const isYes = document.getElementById('f1_fare_yes').checked;
+  const block  = document.getElementById('fareBlock');
+  isYes ? block.classList.add('visible') : block.classList.remove('visible');
+  if (!isYes) {
+    document.querySelectorAll('input[name="f1_fare_type"]').forEach(r => r.checked = false);
+    document.getElementById('jitsuBlock').style.display = 'none';
+    document.getElementById('ichiBlock').style.display  = 'none';
+  }
+}
+
+function onFareTypeChange() {
+  const isJ = document.getElementById('ft_jitsu').checked;
+  const isI = document.getElementById('ft_ichi').checked;
+  document.getElementById('jitsuBlock').style.display = isJ ? 'flex' : 'none';
+  document.getElementById('ichiBlock').style.display  = isI ? 'block' : 'none';
+}
+
+function selectRcv(n, val) {
+  [1,2,3].forEach(i => document.getElementById('rcv' + i).classList.toggle('sel-teal', i === n));
+  selectedRcv = val;
+  document.getElementById('err2_rcv').classList.remove('visible');
+}
+
+function submitForm1() {
+  let ok = true;
+  document.getElementById('globalError1').classList.remove('visible');
+  ['f1_date','f1_start','f1_end'].forEach(id => {
+    const el = document.getElementById(id);
+    const errId = 'err1_' + id.replace('f1_','');
+    if (!el.value) { el.classList.add('has-error'); document.getElementById(errId).classList.add('visible'); ok = false; }
+    else           { el.classList.remove('has-error'); document.getElementById(errId).classList.remove('visible'); }
+  });
+  if (!ok) { document.getElementById('globalError1').classList.add('visible'); return; }
+
+  const fareChecked = document.querySelector('input[name="f1_fare"]:checked');
+  let fareDetail = fareChecked ? fareChecked.value : 'なし';
+  if (fareDetail === 'あり') {
+    const ft = document.querySelector('input[name="f1_fare_type"]:checked');
+    if (ft && ft.value === '実費') {
+      fareDetail = '実費 ' + (document.getElementById('f1_route').value || '') + ' ' + (document.getElementById('f1_amount').value || '') + '円';
+    } else if (ft && ft.value === '一律') {
+      fareDetail = '一律 ' + (document.getElementById('f1_amount2').value || '') + '円';
+    }
+  }
+
+  const payload = {
+    action: 'submitKintai',
+    lineUserId, displayName, staffName: resolvedName,
+    date:      document.getElementById('f1_date').value,
+    startTime: document.getElementById('f1_start').value,
+    endTime:   document.getElementById('f1_end').value,
+    fare:      fareDetail,
+    timestamp: new Date().toISOString(),
+  };
+
+  const btn = document.getElementById('submitBtn1');
+  btn.disabled = true; btn.textContent = '送信中…';
+  sendToGas(payload, '他案件 勤怠報告', btn);
+}
+
+function submitForm2() {
+  let ok = true;
+  document.getElementById('globalError2').classList.remove('visible');
+  const dateEl = document.getElementById('f2_date');
+  if (!dateEl.value) { dateEl.classList.add('has-error'); document.getElementById('err2_date').classList.add('visible'); ok = false; }
+  else               { dateEl.classList.remove('has-error'); document.getElementById('err2_date').classList.remove('visible'); }
+  if (!ok) { document.getElementById('globalError2').classList.add('visible'); return; }
+
+  const payload = {
+    action: 'submitDReport',
+    lineUserId, displayName, staffName: resolvedName,
+    date:       dateEl.value,
+    receive:    selectedRcv,
+    returnItem: document.querySelector('input[name="f2_return"]:checked')?.value || '',
+    drive:      document.querySelector('input[name="f2_drive"]:checked')?.value || '',
+    timestamp:  new Date().toISOString(),
+  };
+
+  const btn = document.getElementById('submitBtn2');
+  btn.disabled = true; btn.textContent = '送信中…';
+  sendToGas(payload, '関西JT 委託D報告', btn);
+}
+
+function sendToGas(payload, label, btn) {
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      document.getElementById('formWrap').style.display = 'none';
+      document.getElementById('successSub').textContent = label + 'の送信が完了しました。\nありがとうございます！';
+      document.getElementById('successScreen').classList.add('visible');
+    } else { throw new Error(data.message || 'error'); }
+  })
+  .catch(err => {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = '送信する';
+    alert('送信に失敗しました。再度お試しください。');
+  });
+}
+
+initLiff();
+</script>
+</body>
+</html>

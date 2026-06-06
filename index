@@ -408,8 +408,8 @@
 </div>
 
 <script>
-const LIFF_ID = '2010311386-7tC3rJId';
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbz9wVWnwaz-OtlLF6qEAm-jIU84u8DO0hKvYOfk1hn_yiHx7pkmIL0_b4xcKLzZNi9IUQ/exec';
+const LIFF_ID = '2010311386-f7zqGqdM';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxvn1WI_W0uNsGpqxLkj5kTA1gqKtI8UfoTMSulj0Wmi8G8woY-ofiTMS375O8lZzKsGg/exec';
 
 let lineUserId   = '';
 let displayName  = '';

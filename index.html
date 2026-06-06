@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>勤怠報告</title>
+  <title>勤怠・報告</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,10 +22,6 @@
       --teal-lt:  #F0FAE8;
       --teal-brd: #C0E8A0;
       --teal-txt: #3A7020;
-      --sky:      #8FD3F4;
-      --sky-lt:   #EEF9FE;
-      --sky-brd:  #BFE8FA;
-      --sky-txt:  #2F7FA3;
       --ok:       #2ec4b6;
       --ng:       #e63946;
       --radius:   14px;
@@ -42,94 +38,64 @@
       background: var(--gray-hdr);
       color: #fff;
       padding: 22px 20px 20px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      position: sticky; top: 0; z-index: 10;
     }
     .header-label { font-size: 12px; letter-spacing: .12em; opacity: .85; text-transform: uppercase; margin-bottom: 4px; }
     .header-title { font-size: 22px; font-weight: 700; letter-spacing: .03em; }
     main { padding: 16px 16px 48px; max-width: 520px; margin: 0 auto; }
     .intro { font-size: 13px; color: var(--ink-sub); margin-bottom: 14px; }
     .nav-card {
-      background: var(--surface);
-      border: 0.5px solid var(--line);
-      border-radius: var(--radius);
-      padding: 15px 14px;
+      background: var(--surface); border: 0.5px solid var(--line);
+      border-radius: var(--radius); padding: 15px 14px;
       display: flex; align-items: center; gap: 12px;
-      cursor: pointer; margin-bottom: 10px;
-      transition: border-color .15s;
-      user-select: none;
+      cursor: pointer; margin-bottom: 10px; transition: border-color .15s; user-select: none;
     }
     .nav-card.open-purp { border: 1.5px solid var(--purp); }
     .nav-card.open-teal { border: 1.5px solid var(--teal); }
-    .nav-card.open-sky { border: 1.5px solid var(--sky); }
-    .nav-icon {
-      width: 42px; height: 42px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; font-size: 20px;
-    }
+    .nav-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; }
     .nav-icon.purp { background: var(--purp); }
     .nav-icon.teal { background: var(--teal); }
-    .nav-icon.sky { background: var(--sky); }
     .nav-text { flex: 1; }
     .nav-title { font-size: 15px; font-weight: 700; color: var(--ink); }
     .nav-sub   { font-size: 12px; color: var(--ink-sub); margin-top: 2px; }
-    .nav-badge {
-      font-size: 11px; padding: 2px 8px; border-radius: 99px;
-      margin-left: 6px; font-weight: 600; vertical-align: middle;
-    }
+    .nav-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; margin-left: 6px; font-weight: 600; vertical-align: middle; }
     .badge-purp { background: var(--purp-lt); color: var(--purp-txt); }
     .badge-teal { background: var(--teal-lt); color: var(--teal-txt); }
-    .badge-sky { background: var(--sky-lt); color: var(--sky-txt); }
     .nav-chev { margin-left: auto; font-size: 18px; color: var(--ink-sub); transition: transform .2s; flex-shrink: 0; }
     .nav-chev.open { transform: rotate(180deg); }
     .panel { display: none; margin-bottom: 10px; }
     .panel.visible { display: block; }
-    .card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      border: 0.5px solid var(--line);
-      padding: 16px 15px;
-    }
+    .card { background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--line); padding: 16px 15px; }
     .card.purp { border-color: var(--purp-brd); }
     .card.teal { border-color: var(--teal-brd); }
-    .card.sky { border-color: var(--sky-brd); }
     .card-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
     .card-title.purp { color: var(--purp); }
     .card-title.teal { color: var(--teal); }
-    .card-title.sky { color: var(--sky-txt); }
-    .login-badge {
-      border-radius: 10px; padding: 8px 11px;
-      font-size: 12px; font-weight: 600;
-      display: flex; align-items: center; gap: 6px;
-      margin-bottom: 14px;
-    }
+    .login-badge { border-radius: 10px; padding: 8px 11px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
     .login-badge.purp { background: var(--purp-lt); border: 0.5px solid var(--purp-brd); color: var(--purp-txt); }
     .login-badge.teal { background: var(--teal-lt); border: 0.5px solid var(--teal-brd); color: var(--teal-txt); }
-    .login-badge.sky { background: var(--sky-lt); border: 0.5px solid var(--sky-brd); color: var(--sky-txt); }
     .login-badge.err  { background: #fff0f1; border: 0.5px solid #f5c4c4; color: var(--ng); }
     .field { margin-bottom: 14px; }
     .field:last-child { margin-bottom: 0; }
-    label {
-      display: block; font-size: 13px; font-weight: 600;
-      color: var(--ink-sub); margin-bottom: 6px;
-    }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-sub); margin-bottom: 6px; }
     label .req { color: var(--ng); margin-left: 3px; }
     label .sub { font-size: 11px; font-weight: 500; margin-left: 5px; }
     label .sub.teal { color: var(--teal); }
-    input[type="date"], input[type="time"], input[type="text"], input[type="number"], select, textarea {
+    input[type="date"], input[type="text"], input[type="number"], select {
       width: 100%; padding: 13px 11px;
-      border: 1.5px solid var(--line);
-      border-radius: 10px; font-size: 16px; font-family: inherit;
-      color: var(--ink); background: var(--surface);
-      appearance: none; -webkit-appearance: none;
-      transition: border-color .15s; outline: none;
+      border: 1.5px solid var(--line); border-radius: 10px;
+      font-size: 16px; font-family: inherit; color: var(--ink); background: var(--surface);
+      appearance: none; -webkit-appearance: none; transition: border-color .15s; outline: none;
     }
-    input:focus { border-color: var(--purp); }
-    input.teal-focus:focus { border-color: var(--teal); }
-    input.has-error { border-color: var(--ng) !important; }
+    input:focus, select:focus { border-color: var(--purp); }
+    input.has-error, select.has-error { border-color: var(--ng) !important; }
+
+    /* 時間選択 */
     .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .time-selects { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .time-sel-wrap { display: flex; flex-direction: column; }
+    .time-sel-label { font-size: 11px; font-weight: 600; color: var(--ink-sub); margin-bottom: 4px; }
+
     .hint { font-size: 12px; margin-bottom: 8px; line-height: 1.6; }
     .hint.purp { color: var(--purp-txt); }
     .radio-group { display: flex; gap: 8px; }
@@ -137,14 +103,26 @@
     .radio-btn input { position: absolute; opacity: 0; width: 0; height: 0; }
     .radio-btn label {
       display: flex; align-items: center; justify-content: center;
-      padding: 12px 6px;
-      border: 1.5px solid var(--line); border-radius: 10px;
+      padding: 12px 6px; border: 1.5px solid var(--line); border-radius: 10px;
       font-size: 15px; font-weight: 600; color: var(--ink-sub);
       cursor: pointer; transition: all .15s; margin: 0; background: var(--surface);
     }
     .radio-btn input:checked + label.purp-sel { border-color: var(--purp); background: var(--purp-lt); color: var(--purp-txt); }
     .radio-btn input:checked + label.teal-sel { border-color: var(--teal); background: var(--teal-lt); color: var(--teal-txt); }
-    .radio-btn input:checked + label.sky-sel { border-color: var(--sky); background: var(--sky-lt); color: var(--sky-txt); }
+
+    /* ポジション */
+    .pos-group { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+    .pos-btn { position: relative; }
+    .pos-btn input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .pos-btn label {
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px 4px; border: 1.5px solid var(--line); border-radius: 10px;
+      font-size: 14px; font-weight: 700; color: var(--ink-sub);
+      cursor: pointer; transition: all .15s; margin: 0; background: var(--surface);
+    }
+    .pos-btn input:checked + label { border-color: var(--purp); background: var(--purp-lt); color: var(--purp-txt); }
+    .pos-other-input { margin-top: 8px; display: none; }
+
     .check3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
     .chk-opt {
       border: 1.5px solid var(--line); border-radius: 10px;
@@ -155,8 +133,8 @@
     .chk-opt.sel-teal { border-color: var(--teal); background: var(--teal-lt); color: var(--teal-txt); }
     .cond-block {
       background: var(--purp-lt); border: 0.5px solid var(--purp-brd);
-      border-radius: 10px; padding: 11px;
-      margin-top: 10px; display: none; flex-direction: column; gap: 10px;
+      border-radius: 10px; padding: 11px; margin-top: 10px;
+      display: none; flex-direction: column; gap: 10px;
     }
     .cond-block.visible { display: flex; }
     .cond-title { font-size: 12px; font-weight: 700; color: var(--purp-txt); margin-bottom: 2px; }
@@ -171,12 +149,10 @@
     .submit-btn {
       width: 100%; padding: 17px; border: none; border-radius: var(--radius);
       font-size: 17px; font-weight: 700; font-family: inherit;
-      letter-spacing: .04em; cursor: pointer;
-      transition: opacity .15s; color: #fff; margin-top: 6px;
+      letter-spacing: .04em; cursor: pointer; transition: opacity .15s; color: #fff; margin-top: 6px;
     }
     .submit-btn.purp { background: var(--purp); }
     .submit-btn.teal { background: var(--teal); }
-    .submit-btn.sky { background: var(--sky); }
     .submit-btn:disabled { opacity: .55; cursor: not-allowed; }
     #successScreen {
       display: none; flex-direction: column;
@@ -227,18 +203,18 @@
 <div id="formWrap">
   <header class="header">
     <div class="header-label">Event Staff</div>
-    <div class="header-title">勤怠報告</div>
+    <div class="header-title">勤怠・報告</div>
   </header>
 
   <main>
-    <p class="intro">関西エリアの報告種類を選んでください</p>
+    <p class="intro">報告する種類を選んでください</p>
 
     <!-- ① 他案件勤怠 -->
     <div class="nav-card" id="nav1" onclick="togglePanel(1)">
       <div class="nav-icon purp">📝</div>
       <div class="nav-text">
         <div class="nav-title">他案件 勤怠報告<span class="nav-badge badge-purp" id="badge1" style="display:none">選択中</span></div>
-        <div class="nav-sub">JT以外の案件のポジション・勤怠を報告</div>
+        <div class="nav-sub">JT以外の案件の勤怠を報告</div>
       </div>
       <div class="nav-chev" id="chev1">▼</div>
     </div>
@@ -251,7 +227,6 @@
         </div>
         <div id="globalError1" class="global-error">入力に不備があります。確認してください。</div>
 
-        <!-- 案件名（追加） -->
         <div class="field">
           <label for="f1_project">案件名<span class="req">*</span></label>
           <input type="text" id="f1_project" placeholder="例）〇〇展示会 大阪会場">
@@ -260,47 +235,49 @@
 
         <div class="field">
           <label for="f1_date">勤務日<span class="req">*</span></label>
-          <input type="date" id="f1_date" class="teal-focus">
+          <input type="date" id="f1_date">
           <div class="field-error" id="err1_date">勤務日を選択してください</div>
         </div>
 
+        <!-- ポジション -->
         <div class="field">
           <label>ポジション<span class="req">*</span></label>
-          <div class="radio-group" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
-            <div class="radio-btn">
-              <input type="radio" name="f1_position" id="f1_pos_d" value="D" checked onchange="onKintaiPositionChange()">
-              <label for="f1_pos_d" class="purp-sel">D</label>
+          <div class="pos-group">
+            <div class="pos-btn">
+              <input type="radio" name="f1_position" id="pos_d" value="D" onchange="onPositionChange()">
+              <label for="pos_d">D</label>
             </div>
-            <div class="radio-btn">
-              <input type="radio" name="f1_position" id="f1_pos_ad" value="AD" onchange="onKintaiPositionChange()">
-              <label for="f1_pos_ad" class="purp-sel">AD</label>
+            <div class="pos-btn">
+              <input type="radio" name="f1_position" id="pos_ad" value="AD" onchange="onPositionChange()">
+              <label for="pos_ad">AD</label>
             </div>
-            <div class="radio-btn">
-              <input type="radio" name="f1_position" id="f1_pos_st" value="ST" onchange="onKintaiPositionChange()">
-              <label for="f1_pos_st" class="purp-sel">ST</label>
+            <div class="pos-btn">
+              <input type="radio" name="f1_position" id="pos_st" value="ST" onchange="onPositionChange()">
+              <label for="pos_st">ST</label>
             </div>
-            <div class="radio-btn">
-              <input type="radio" name="f1_position" id="f1_pos_other" value="その他" onchange="onKintaiPositionChange()">
-              <label for="f1_pos_other" class="purp-sel" style="font-size:13px;">その他</label>
+            <div class="pos-btn">
+              <input type="radio" name="f1_position" id="pos_other" value="その他" onchange="onPositionChange()">
+              <label for="pos_other">その他</label>
             </div>
           </div>
-          <input type="text" id="f1_position_other" placeholder="その他の場合はこちらに記載" style="margin-top:8px;display:none;">
+          <input type="text" id="f1_position_other" class="pos-other-input" placeholder="ポジションを記入してください">
           <div class="field-error" id="err1_position">ポジションを選択してください</div>
-          <div class="field-error" id="err1_position_other">その他の内容を入力してください</div>
+          <div class="field-error" id="err1_position_other">内容を入力してください</div>
         </div>
 
-        <div class="time-row" style="grid-template-columns: 1fr 1fr; gap: 14px;">
+        <!-- 開始・終了時間 -->
+        <div class="time-row">
           <div class="field">
             <label>開始時間<span class="req">*</span></label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-              <div>
-                <label style="font-size:12px;margin-bottom:4px;">時</label>
+            <div class="time-selects">
+              <div class="time-sel-wrap">
+                <span class="time-sel-label">時</span>
                 <select id="f1_start_h"></select>
               </div>
-              <div>
-                <label style="font-size:12px;margin-bottom:4px;">分</label>
+              <div class="time-sel-wrap">
+                <span class="time-sel-label">分</span>
                 <select id="f1_start_m">
-                  <option value="">分</option>
+                  <option value="">--</option>
                   <option value="00">00</option>
                   <option value="15">15</option>
                   <option value="30">30</option>
@@ -310,18 +287,17 @@
             </div>
             <div class="field-error" id="err1_start">入力してください</div>
           </div>
-
           <div class="field">
             <label>終了時間<span class="req">*</span></label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-              <div>
-                <label style="font-size:12px;margin-bottom:4px;">時</label>
+            <div class="time-selects">
+              <div class="time-sel-wrap">
+                <span class="time-sel-label">時</span>
                 <select id="f1_end_h"></select>
               </div>
-              <div>
-                <label style="font-size:12px;margin-bottom:4px;">分</label>
+              <div class="time-sel-wrap">
+                <span class="time-sel-label">分</span>
                 <select id="f1_end_m">
-                  <option value="">分</option>
+                  <option value="">--</option>
                   <option value="00">00</option>
                   <option value="15">15</option>
                   <option value="30">30</option>
@@ -333,6 +309,7 @@
           </div>
         </div>
 
+        <!-- 交通費 -->
         <div class="field">
           <label>交通費<span class="req">*</span></label>
           <div class="hint purp">案件連絡時に交通費支給ありの場合のみ、ありでご入力ください</div>
@@ -346,8 +323,6 @@
               <label for="f1_fare_yes" class="purp-sel">あり</label>
             </div>
           </div>
-          <div class="field-error" id="err1_fare">交通費を選択してください</div>
-
           <div class="cond-block" id="fareBlock">
             <div class="cond-title">種別を選んでください</div>
             <div class="radio-group">
@@ -366,7 +341,7 @@
                 <input type="text" id="f1_route" placeholder="例）梅田駅〜本町駅" style="font-size:14px;padding:10px 11px;">
               </div>
               <div class="field" style="margin-bottom:0;">
-                <label style="font-size:12px;">料金（円）<span style="font-size:11px;font-weight:500;color:var(--purp-txt);margin-left:6px;">片道ではなく往復もしくは合計額を入力</span></label>
+                <label style="font-size:12px;">料金（円）<span style="font-size:11px;font-weight:500;color:var(--ng);margin-left:4px;">※片道ではなく合計金額を記載</span></label>
                 <input type="number" id="f1_amount" placeholder="例）360" style="font-size:14px;padding:10px 11px;">
               </div>
             </div>
@@ -429,7 +404,6 @@
               <label for="f2_ret_no" class="teal-sel">なし</label>
             </div>
           </div>
-          <div class="field-error" id="err2_return">備品の返却を選択してください</div>
         </div>
 
         <div class="field">
@@ -444,14 +418,11 @@
               <label for="f2_drv_no" class="teal-sel">なし</label>
             </div>
           </div>
-          <div class="field-error" id="err2_drive">運転を選択してください</div>
         </div>
 
         <button class="submit-btn teal" id="submitBtn2" type="button" onclick="submitForm2()">送信する</button>
       </div>
     </div>
-
-
 
   </main>
 </div>
@@ -465,58 +436,46 @@ let displayName  = '';
 let resolvedName = '';
 let selectedRcv  = '受け取りなし';
 
-function setupHourOptions() {
-  const ids = ['f1_start_h', 'f1_end_h'];
-  ids.forEach(id => {
-    const select = document.getElementById(id);
-    if (!select) return;
-    select.innerHTML = '<option value="">時</option>';
+// 時間セレクト初期化
+function setupHourSelects() {
+  ['f1_start_h','f1_end_h'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">--</option>';
     for (let h = 0; h <= 23; h++) {
-      const value = String(h).padStart(2, '0');
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = value;
-      select.appendChild(option);
+      const v = String(h).padStart(2,'0');
+      sel.innerHTML += '<option value="' + v + '">' + v + '</option>';
     }
   });
-
-  // モック確認しやすいように初期値を入れる
-  document.getElementById('f1_start_h').value = '09';
-  document.getElementById('f1_start_m').value = '00';
-  document.getElementById('f1_end_h').value = '17';
-  document.getElementById('f1_end_m').value = '15';
 }
 
-function getTimeValue(hourId, minuteId) {
-  const h = document.getElementById(hourId).value;
-  const m = document.getElementById(minuteId).value;
+function getTime(hId, mId) {
+  const h = document.getElementById(hId).value;
+  const m = document.getElementById(mId).value;
   if (!h || !m) return '';
   return h + ':' + m;
 }
 
-function onKintaiPositionChange() {
-  const selected = document.querySelector('input[name="f1_position"]:checked')?.value || '';
-  const otherInput = document.getElementById('f1_position_other');
-  const otherErr = document.getElementById('err1_position_other');
-
-  if (selected === 'その他') {
-    otherInput.style.display = 'block';
+// ポジション「その他」制御
+function onPositionChange() {
+  const val = document.querySelector('input[name="f1_position"]:checked')?.value || '';
+  const other = document.getElementById('f1_position_other');
+  if (val === 'その他') {
+    other.style.display = 'block';
   } else {
-    otherInput.style.display = 'none';
-    otherInput.value = '';
-    otherInput.classList.remove('has-error');
-    if (otherErr) otherErr.classList.remove('visible');
+    other.style.display = 'none';
+    other.value = '';
+    other.classList.remove('has-error');
+    document.getElementById('err1_position_other').classList.remove('visible');
   }
 }
 
-function getKintaiPosition() {
-  const selected = document.querySelector('input[name="f1_position"]:checked')?.value || '';
-  const other = document.getElementById('f1_position_other')?.value.trim() || '';
-  return selected === 'その他' ? other : selected;
+function getPosition() {
+  const val = document.querySelector('input[name="f1_position"]:checked')?.value || '';
+  if (val === 'その他') {
+    return document.getElementById('f1_position_other').value.trim();
+  }
+  return val;
 }
-
-
-
 
 async function initLiff() {
   try {
@@ -546,56 +505,35 @@ async function initLiff() {
 }
 
 function setLoginText(text, isErr) {
-  ['loginName1','loginName2','loginName3'].forEach(id => {
-    const target = document.getElementById(id);
-    if (target) target.textContent = text;
-  });
+  ['loginName1','loginName2'].forEach(id => document.getElementById(id).textContent = text);
   if (isErr) {
-    ['loginBadge1','loginBadge2','loginBadge3'].forEach(id => {
+    ['loginBadge1','loginBadge2'].forEach(id => {
       const el = document.getElementById(id);
-      if (!el) return;
-      el.classList.remove('purp','teal','sky');
+      el.classList.remove('purp','teal');
       el.classList.add('err');
     });
   }
 }
 
 function togglePanel(n) {
-  [1, 2, 3].forEach(i => {
-    if (i === n) return;
-    const panel = document.getElementById('panel' + i);
-    const nav = document.getElementById('nav' + i);
-    const chev = document.getElementById('chev' + i);
-    const badge = document.getElementById('badge' + i);
-    if (panel) panel.classList.remove('visible');
-    if (nav) nav.classList.remove('open-purp','open-teal','open-sky');
-    if (chev) chev.classList.remove('open');
-    if (badge) badge.style.display = 'none';
-  });
-
+  const o = n === 1 ? 2 : 1;
   const panel = document.getElementById('panel' + n);
-  if (!panel) return;
   const isOpen = panel.classList.contains('visible');
-
-  const nav = document.getElementById('nav' + n);
-  const chev = document.getElementById('chev' + n);
-  const badge = document.getElementById('badge' + n);
-
+  document.getElementById('panel' + o).classList.remove('visible');
+  document.getElementById('nav'   + o).classList.remove('open-purp','open-teal');
+  document.getElementById('chev'  + o).classList.remove('open');
+  document.getElementById('badge' + o).style.display = 'none';
   if (isOpen) {
     panel.classList.remove('visible');
-    if (nav) nav.classList.remove('open-purp','open-teal','open-sky');
-    if (chev) chev.classList.remove('open');
-    if (badge) badge.style.display = 'none';
+    document.getElementById('nav'  + n).classList.remove('open-purp','open-teal');
+    document.getElementById('chev' + n).classList.remove('open');
+    document.getElementById('badge'+ n).style.display = 'none';
   } else {
     panel.classList.add('visible');
-    const cls = n === 1 ? 'open-purp' : n === 2 ? 'open-teal' : 'open-sky';
-    if (nav) nav.classList.add(cls);
-    if (chev) chev.classList.add('open');
-    if (badge) badge.style.display = 'inline';
-    setTimeout(() => {
-      const navNow = document.getElementById('nav' + n);
-      if (navNow) navNow.scrollIntoView({ behavior:'smooth', block:'start' });
-    }, 50);
+    document.getElementById('nav'  + n).classList.add(n === 1 ? 'open-purp' : 'open-teal');
+    document.getElementById('chev' + n).classList.add('open');
+    document.getElementById('badge'+ n).style.display = 'inline';
+    setTimeout(() => document.getElementById('nav' + n).scrollIntoView({ behavior:'smooth', block:'start' }), 50);
   }
 }
 
@@ -627,7 +565,7 @@ function submitForm1() {
   let ok = true;
   document.getElementById('globalError1').classList.remove('visible');
 
-  // 案件名バリデーション
+  // 案件名
   const projectEl = document.getElementById('f1_project');
   if (!projectEl.value.trim()) {
     projectEl.classList.add('has-error');
@@ -638,43 +576,45 @@ function submitForm1() {
     document.getElementById('err1_project').classList.remove('visible');
   }
 
-  const dateEl1 = document.getElementById('f1_date');
-  if (!dateEl1.value) {
-    dateEl1.classList.add('has-error');
+  // 勤務日
+  const dateEl = document.getElementById('f1_date');
+  if (!dateEl.value) {
+    dateEl.classList.add('has-error');
     document.getElementById('err1_date').classList.add('visible');
     ok = false;
   } else {
-    dateEl1.classList.remove('has-error');
+    dateEl.classList.remove('has-error');
     document.getElementById('err1_date').classList.remove('visible');
   }
 
-  const selectedPosition = document.querySelector('input[name="f1_position"]:checked')?.value || '';
-  const positionOtherEl = document.getElementById('f1_position_other');
-  if (selectedPosition === 'その他' && !positionOtherEl.value.trim()) {
-    positionOtherEl.classList.add('has-error');
-    document.getElementById('err1_position_other').classList.add('visible');
+  // ポジション
+  const posVal = document.querySelector('input[name="f1_position"]:checked')?.value || '';
+  if (!posVal) {
+    document.getElementById('err1_position').classList.add('visible');
     ok = false;
   } else {
-    positionOtherEl.classList.remove('has-error');
-    document.getElementById('err1_position_other').classList.remove('visible');
+    document.getElementById('err1_position').classList.remove('visible');
+  }
+  if (posVal === 'その他') {
+    const otherEl = document.getElementById('f1_position_other');
+    if (!otherEl.value.trim()) {
+      otherEl.classList.add('has-error');
+      document.getElementById('err1_position_other').classList.add('visible');
+      ok = false;
+    } else {
+      otherEl.classList.remove('has-error');
+      document.getElementById('err1_position_other').classList.remove('visible');
+    }
   }
 
-  const startTime = getTimeValue('f1_start_h', 'f1_start_m');
-  const endTime   = getTimeValue('f1_end_h', 'f1_end_m');
+  // 開始・終了時間
+  const startTime = getTime('f1_start_h','f1_start_m');
+  const endTime   = getTime('f1_end_h','f1_end_m');
+  if (!startTime) { document.getElementById('err1_start').classList.add('visible'); ok = false; }
+  else            { document.getElementById('err1_start').classList.remove('visible'); }
+  if (!endTime)   { document.getElementById('err1_end').classList.add('visible'); ok = false; }
+  else            { document.getElementById('err1_end').classList.remove('visible'); }
 
-  if (!startTime) {
-    document.getElementById('err1_start').classList.add('visible');
-    ok = false;
-  } else {
-    document.getElementById('err1_start').classList.remove('visible');
-  }
-
-  if (!endTime) {
-    document.getElementById('err1_end').classList.add('visible');
-    ok = false;
-  } else {
-    document.getElementById('err1_end').classList.remove('visible');
-  }
   if (!ok) { document.getElementById('globalError1').classList.add('visible'); return; }
 
   const fareChecked = document.querySelector('input[name="f1_fare"]:checked');
@@ -689,11 +629,11 @@ function submitForm1() {
   }
 
   const payload = {
-    action: 'submitKintai',
+    action:    'submitKintai',
     lineUserId, displayName, staffName: resolvedName,
     project:   projectEl.value.trim(),
-    position:  getKintaiPosition(),
-    date:      document.getElementById('f1_date').value,
+    date:      dateEl.value,
+    position:  getPosition(),
     startTime: startTime,
     endTime:   endTime,
     fare:      fareDetail,
@@ -714,7 +654,7 @@ function submitForm2() {
   if (!ok) { document.getElementById('globalError2').classList.add('visible'); return; }
 
   const payload = {
-    action: 'submitDReport',
+    action:     'submitDReport',
     lineUserId, displayName, staffName: resolvedName,
     date:       dateEl.value,
     receive:    selectedRcv,
@@ -728,11 +668,6 @@ function submitForm2() {
   sendToGas(payload, '関西JT 委託D報告', btn);
 }
 
-
-
-
-
-
 function sendToGas(payload, label, btn) {
   fetch(GAS_URL, {
     method: 'POST',
@@ -743,12 +678,9 @@ function sendToGas(payload, label, btn) {
   .then(data => {
     if (data.status === 'ok') {
       document.getElementById('formWrap').style.display = 'none';
-      document.getElementById('successSub').textContent = label + 'の送信が完了しました。
-ありがとうございます！';
+      document.getElementById('successSub').textContent = label + 'の送信が完了しました。\nありがとうございます！';
       document.getElementById('successScreen').classList.add('visible');
-    } else {
-      throw new Error(data.message || 'error');
-    }
+    } else { throw new Error(data.message || 'error'); }
   })
   .catch(err => {
     console.error(err);
@@ -758,8 +690,7 @@ function sendToGas(payload, label, btn) {
   });
 }
 
-setupHourOptions();
-onKintaiPositionChange();
+setupHourSelects();
 initLiff();
 </script>
 </body>

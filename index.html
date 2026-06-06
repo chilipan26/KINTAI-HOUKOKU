@@ -46,8 +46,6 @@
     .header-title { font-size: 22px; font-weight: 700; letter-spacing: .03em; }
     main { padding: 16px 16px 48px; max-width: 520px; margin: 0 auto; }
     .intro { font-size: 13px; color: var(--ink-sub); margin-bottom: 14px; }
-
-    /* NAV */
     .nav-card {
       background: var(--surface);
       border: 0.5px solid var(--line);
@@ -79,12 +77,8 @@
     .badge-teal { background: var(--teal-lt); color: var(--teal-txt); }
     .nav-chev { margin-left: auto; font-size: 18px; color: var(--ink-sub); transition: transform .2s; flex-shrink: 0; }
     .nav-chev.open { transform: rotate(180deg); }
-
-    /* PANEL */
     .panel { display: none; margin-bottom: 10px; }
     .panel.visible { display: block; }
-
-    /* CARD */
     .card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -96,8 +90,6 @@
     .card-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
     .card-title.purp { color: var(--purp); }
     .card-title.teal { color: var(--teal); }
-
-    /* LOGIN BADGE */
     .login-badge {
       border-radius: 10px; padding: 8px 11px;
       font-size: 12px; font-weight: 600;
@@ -107,8 +99,6 @@
     .login-badge.purp { background: var(--purp-lt); border: 0.5px solid var(--purp-brd); color: var(--purp-txt); }
     .login-badge.teal { background: var(--teal-lt); border: 0.5px solid var(--teal-brd); color: var(--teal-txt); }
     .login-badge.err  { background: #fff0f1; border: 0.5px solid #f5c4c4; color: var(--ng); }
-
-    /* FIELD */
     .field { margin-bottom: 14px; }
     .field:last-child { margin-bottom: 0; }
     label {
@@ -118,7 +108,6 @@
     label .req { color: var(--ng); margin-left: 3px; }
     label .sub { font-size: 11px; font-weight: 500; margin-left: 5px; }
     label .sub.teal { color: var(--teal); }
-
     input[type="date"], input[type="time"], input[type="text"], input[type="number"] {
       width: 100%; padding: 13px 11px;
       border: 1.5px solid var(--line);
@@ -130,14 +119,9 @@
     input:focus { border-color: var(--purp); }
     input.teal-focus:focus { border-color: var(--teal); }
     input.has-error { border-color: var(--ng) !important; }
-
     .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    /* HINT */
     .hint { font-size: 12px; margin-bottom: 8px; line-height: 1.6; }
     .hint.purp { color: var(--purp-txt); }
-
-    /* RADIO */
     .radio-group { display: flex; gap: 8px; }
     .radio-btn { flex: 1; position: relative; }
     .radio-btn input { position: absolute; opacity: 0; width: 0; height: 0; }
@@ -150,8 +134,6 @@
     }
     .radio-btn input:checked + label.purp-sel { border-color: var(--purp); background: var(--purp-lt); color: var(--purp-txt); }
     .radio-btn input:checked + label.teal-sel { border-color: var(--teal); background: var(--teal-lt); color: var(--teal-txt); }
-
-    /* CHECK3 */
     .check3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
     .chk-opt {
       border: 1.5px solid var(--line); border-radius: 10px;
@@ -160,8 +142,6 @@
       transition: all .15s; background: var(--surface); line-height: 1.4;
     }
     .chk-opt.sel-teal { border-color: var(--teal); background: var(--teal-lt); color: var(--teal-txt); }
-
-    /* COND BLOCK */
     .cond-block {
       background: var(--purp-lt); border: 0.5px solid var(--purp-brd);
       border-radius: 10px; padding: 11px;
@@ -169,8 +149,6 @@
     }
     .cond-block.visible { display: flex; }
     .cond-title { font-size: 12px; font-weight: 700; color: var(--purp-txt); margin-bottom: 2px; }
-
-    /* ERROR */
     .field-error { font-size: 12px; color: var(--ng); margin-top: 5px; display: none; }
     .field-error.visible { display: block; }
     .global-error {
@@ -179,8 +157,6 @@
       font-size: 13px; color: var(--ng); font-weight: 600; margin-bottom: 12px;
     }
     .global-error.visible { display: block; }
-
-    /* SUBMIT */
     .submit-btn {
       width: 100%; padding: 17px; border: none; border-radius: var(--radius);
       font-size: 17px; font-weight: 700; font-family: inherit;
@@ -190,8 +166,6 @@
     .submit-btn.purp { background: var(--purp); }
     .submit-btn.teal { background: var(--teal); }
     .submit-btn:disabled { opacity: .55; cursor: not-allowed; }
-
-    /* SUCCESS */
     #successScreen {
       display: none; flex-direction: column;
       align-items: center; justify-content: center;
@@ -206,8 +180,6 @@
     .success-icon svg { width: 44px; height: 44px; }
     .success-title { font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 12px; }
     .success-sub { font-size: 16px; color: var(--ink-sub); line-height: 1.8; }
-
-    /* LOADING */
     #loadingScreen {
       position: fixed; inset: 0; background: var(--bg);
       display: flex; align-items: center; justify-content: center;
@@ -266,6 +238,13 @@
           <span>👤</span><span id="loginName1">読み込み中…</span>
         </div>
         <div id="globalError1" class="global-error">入力に不備があります。確認してください。</div>
+
+        <!-- 案件名（追加） -->
+        <div class="field">
+          <label for="f1_project">案件名<span class="req">*</span></label>
+          <input type="text" id="f1_project" placeholder="例）〇〇展示会 大阪会場">
+          <div class="field-error" id="err1_project">案件名を入力してください</div>
+        </div>
 
         <div class="field">
           <label for="f1_date">勤務日<span class="req">*</span></label>
@@ -503,6 +482,18 @@ function selectRcv(n, val) {
 function submitForm1() {
   let ok = true;
   document.getElementById('globalError1').classList.remove('visible');
+
+  // 案件名バリデーション
+  const projectEl = document.getElementById('f1_project');
+  if (!projectEl.value.trim()) {
+    projectEl.classList.add('has-error');
+    document.getElementById('err1_project').classList.add('visible');
+    ok = false;
+  } else {
+    projectEl.classList.remove('has-error');
+    document.getElementById('err1_project').classList.remove('visible');
+  }
+
   ['f1_date','f1_start','f1_end'].forEach(id => {
     const el = document.getElementById(id);
     const errId = 'err1_' + id.replace('f1_','');
@@ -525,6 +516,7 @@ function submitForm1() {
   const payload = {
     action: 'submitKintai',
     lineUserId, displayName, staffName: resolvedName,
+    project:   projectEl.value.trim(),
     date:      document.getElementById('f1_date').value,
     startTime: document.getElementById('f1_start').value,
     endTime:   document.getElementById('f1_end').value,

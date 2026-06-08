@@ -1,215 +1,564 @@
-// ============================================================
-// 関西勤怠報告LIFF — GASバックエンド（完全版）
-// ============================================================
-// 【シート構成】書き込み先：ニヤマ (NIYAMA_SS_ID)
-//   - LINE_他案件勤怠  : 他案件勤怠報告
-//   - LINE_関西JT委託D : 関西JT委託D報告
-//   - LINE_関西JT勤怠  : 関西JT勤怠報告（新規）
-// 参照先：マスターデータ (MASTER_SS_ID)
-//   - LINE ID シート   : LINE UserID → 氏名 照合
-//
-// 【セットアップ手順】
-//   1. ニヤマのGASプロジェクトに貼り付け
-//   2. デプロイ → 新しいデプロイ → ウェブアプリ
-//      実行ユーザー: 自分 / アクセス: 全員（匿名含む）
-//   3. デプロイURLをindex_kansei.htmlのGAS_URLに貼り付け
-// ============================================================
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>勤怠報告</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:        #1a1a2e;
+      --ink-sub:    #5a5a7a;
+      --surface:    #ffffff;
+      --bg:         #F5F5F3;
+      --line:       #e2e2ec;
+      --gray-hdr:   #AEADA8;
+      --purp:       #C4A8D8;
+      --purp-lt:    #F5EEF9;
+      --purp-brd:   #DCC8EC;
+      --purp-txt:   #7A5A96;
+      --ygreen:     #7CCF50;
+      --ygreen-lt:  #F0FAE8;
+      --ygreen-brd: #C0E8A0;
+      --ygreen-txt: #3A7020;
+      --teal:       #4A9E8E;
+      --teal-lt:    #E0F2F0;
+      --teal-brd:   #A8D4CE;
+      --teal-txt:   #2A6E64;
+      --ok:         #2ec4b6;
+      --ng:         #e63946;
+      --radius:     14px;
+    }
+    html, body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+      font-size: 16px; min-height: 100vh; -webkit-tap-highlight-color: transparent;
+    }
+    .header { background: var(--gray-hdr); color: #fff; padding: 22px 20px 20px; position: sticky; top: 0; z-index: 10; }
+    .header-label { font-size: 12px; letter-spacing: .12em; opacity: .85; text-transform: uppercase; margin-bottom: 4px; }
+    .header-title { font-size: 22px; font-weight: 700; letter-spacing: .03em; }
+    main { padding: 16px 16px 48px; max-width: 520px; margin: 0 auto; }
+    .intro { font-size: 13px; color: var(--ink-sub); margin-bottom: 14px; }
+    .nav-card { background: var(--surface); border: 0.5px solid var(--line); border-radius: var(--radius); padding: 15px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; margin-bottom: 10px; transition: border-color .15s; user-select: none; }
+    .nav-card.open-purp   { border: 1.5px solid var(--purp); }
+    .nav-card.open-ygreen { border: 1.5px solid var(--ygreen); }
+    .nav-card.open-teal   { border: 1.5px solid var(--teal); }
+    .nav-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; }
+    .nav-icon.purp   { background: var(--purp); }
+    .nav-icon.ygreen { background: var(--ygreen); }
+    .nav-icon.teal   { background: var(--teal); }
+    .nav-text { flex: 1; }
+    .nav-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+    .nav-sub   { font-size: 12px; color: var(--ink-sub); margin-top: 2px; }
+    .nav-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; margin-left: 6px; font-weight: 600; vertical-align: middle; }
+    .badge-purp   { background: var(--purp-lt);   color: var(--purp-txt); }
+    .badge-ygreen { background: var(--ygreen-lt); color: var(--ygreen-txt); }
+    .badge-teal   { background: var(--teal-lt);   color: var(--teal-txt); }
+    .nav-chev { margin-left: auto; font-size: 18px; color: var(--ink-sub); transition: transform .2s; flex-shrink: 0; }
+    .nav-chev.open { transform: rotate(180deg); }
+    .panel { display: none; margin-bottom: 10px; }
+    .panel.visible { display: block; }
+    .card { background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--line); padding: 16px 15px; }
+    .card.purp   { border-color: var(--purp-brd); }
+    .card.ygreen { border-color: var(--ygreen-brd); }
+    .card.teal   { border-color: var(--teal-brd); }
+    .card-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+    .card-title.purp   { color: var(--purp); }
+    .card-title.ygreen { color: var(--ygreen); }
+    .card-title.teal   { color: var(--teal); }
+    .login-badge { border-radius: 10px; padding: 8px 11px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+    .login-badge.purp   { background: var(--purp-lt);   border: 0.5px solid var(--purp-brd);   color: var(--purp-txt); }
+    .login-badge.ygreen { background: var(--ygreen-lt); border: 0.5px solid var(--ygreen-brd); color: var(--ygreen-txt); }
+    .login-badge.teal   { background: var(--teal-lt);   border: 0.5px solid var(--teal-brd);   color: var(--teal-txt); }
+    .login-badge.err    { background: #fff0f1; border: 0.5px solid #f5c4c4; color: var(--ng); }
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-sub); margin-bottom: 6px; }
+    label .req { color: var(--ng); margin-left: 3px; }
+    label .sub { font-size: 11px; font-weight: 500; margin-left: 5px; }
+    label .sub.ygreen { color: var(--ygreen); }
+    input[type="date"], input[type="text"], input[type="number"], select {
+      width: 100%; padding: 13px 11px; border: 1.5px solid var(--line); border-radius: 10px;
+      font-size: 16px; font-family: inherit; color: var(--ink); background: var(--surface);
+      appearance: none; -webkit-appearance: none; transition: border-color .15s; outline: none;
+    }
+    input.has-error, select.has-error { border-color: var(--ng) !important; }
+    .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .time-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .time-inner label { font-size: 12px; margin-bottom: 4px; }
+    .hint { font-size: 12px; margin-bottom: 8px; line-height: 1.6; }
+    .hint.purp { color: var(--purp-txt); }
+    .radio-group { display: flex; gap: 8px; }
+    .radio-btn { flex: 1; position: relative; }
+    .radio-btn input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .radio-btn label { display: flex; align-items: center; justify-content: center; padding: 12px 6px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 15px; font-weight: 600; color: var(--ink-sub); cursor: pointer; transition: all .15s; margin: 0; background: var(--surface); }
+    .radio-btn input:checked + label.purp-sel   { border-color: var(--purp);   background: var(--purp-lt);   color: var(--purp-txt); }
+    .radio-btn input:checked + label.ygreen-sel { border-color: var(--ygreen); background: var(--ygreen-lt); color: var(--ygreen-txt); }
+    .cond-block { background: var(--purp-lt); border: 0.5px solid var(--purp-brd); border-radius: 10px; padding: 11px; margin-top: 10px; display: none; flex-direction: column; gap: 10px; }
+    .cond-block.visible { display: flex; }
+    .cond-title { font-size: 12px; font-weight: 700; color: var(--purp-txt); margin-bottom: 2px; }
+    .rcv-list { display: flex; flex-direction: column; gap: 7px; }
+    .rcv-btn { border: 1.5px solid var(--line); border-radius: 12px; padding: 13px 14px; background: var(--surface); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all .15s; user-select: none; }
+    .rcv-btn.sel { border-color: var(--ygreen); background: var(--ygreen-lt); }
+    .rcv-emoji { font-size: 26px; width: 34px; text-align: center; flex-shrink: 0; }
+    .rcv-main { font-size: 14px; font-weight: 700; color: var(--ink); }
+    .rcv-btn.sel .rcv-main { color: var(--ygreen-txt); }
+    .rcv-sub  { font-size: 12px; color: #999; margin-top: 3px; line-height: 1.4; }
+    .rcv-btn.sel .rcv-sub  { color: #5a9040; }
+    .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .content-btn { border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 8px; font-size: 13px; font-weight: 600; color: var(--ink-sub); text-align: center; cursor: pointer; background: var(--surface); transition: all .15s; line-height: 1.4; user-select: none; }
+    .content-btn.sel { border-color: var(--teal); background: var(--teal-lt); color: var(--teal-txt); }
+    .content-btn.full { grid-column: 1 / -1; }
+    .other-block { margin-top: 8px; display: none; }
+    .other-block.visible { display: block; }
+    .field-error { font-size: 12px; color: var(--ng); margin-top: 5px; display: none; }
+    .field-error.visible { display: block; }
+    .global-error { display: none; background: #fff0f1; border: 1.5px solid var(--ng); border-radius: 10px; padding: 11px 13px; font-size: 13px; color: var(--ng); font-weight: 600; margin-bottom: 12px; }
+    .global-error.visible { display: block; }
+    .submit-btn { width: 100%; padding: 17px; border: none; border-radius: var(--radius); font-size: 17px; font-weight: 700; font-family: inherit; letter-spacing: .04em; cursor: pointer; color: #fff; margin-top: 6px; transition: opacity .15s; }
+    .submit-btn.purp   { background: var(--purp); }
+    .submit-btn.ygreen { background: var(--ygreen); }
+    .submit-btn.teal   { background: var(--teal); }
+    .submit-btn:disabled { opacity: .55; cursor: not-allowed; }
+    #successScreen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding: 32px 24px; }
+    #successScreen.visible { display: flex; }
+    .success-icon { width: 88px; height: 88px; background: var(--ok); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
+    .success-icon svg { width: 44px; height: 44px; }
+    .success-title { font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 12px; }
+    .success-sub { font-size: 16px; color: var(--ink-sub); line-height: 1.8; }
+    #loadingScreen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; flex-direction: column; gap: 16px; }
+    #loadingScreen.hidden { display: none; }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--line); border-top-color: var(--gray-hdr); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 15px; color: var(--ink-sub); }
+  </style>
+</head>
+<body>
 
-const NIYAMA_SS_ID = '1A4_Fvng9nWtKcnkicjtNLjoBieOiuL9Sjf7UzKnHKdI';
-const MASTER_SS_ID = '1DN1E9D900xfAxEOxbshanl4Byz0CwADuFi0cnqX_cY8';
+<div id="loadingScreen"><div class="spinner"></div><div class="loading-text">読み込み中…</div></div>
 
-const SHEET_KINTAI   = 'LINE_他案件勤怠';
-const SHEET_DREPORT  = 'LINE_関西JT委託D';
-const SHEET_JTKINTAI = 'LINE_関西JT勤怠';
-const SHEET_LINEID   = 'LINE ID';
+<div id="successScreen">
+  <div class="success-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="success-title">送信完了しました</div>
+  <div id="successSub" class="success-sub">ご報告ありがとうございます！</div>
+</div>
 
-const HEADERS_KINTAI = [
-  '送信日時', 'LINE UserID', 'LINEアカウント名', '氏名',
-  'ポジション', '勤務日', '開始時間', '終了時間', '交通費',
-];
-const HEADERS_DREPORT = [
-  '送信日時', 'LINE UserID', 'LINEアカウント名', '氏名',
-  '勤務日', '備品受取', '備品返却', '運転',
-];
-const HEADERS_JTKINTAI = [
-  '送信日時', 'LINE UserID', 'LINEアカウント名', '氏名',
-  '勤務日', '勤務内容',
-];
+<div id="formWrap">
+  <header class="header">
+    <div class="header-label">Event Staff</div>
+    <div class="header-title">勤怠報告</div>
+  </header>
+  <main>
+    <p class="intro">関西エリアの報告種類を選んでください</p>
 
-// ============================================================
-// doGet — LINE ID照合 & ヘルスチェック
-// ============================================================
-function doGet(e) {
-  const output = ContentService.createTextOutput();
-  output.setMimeType(ContentService.MimeType.JSON);
+    <!-- ① 他案件勤怠 -->
+    <div class="nav-card" id="nav1" onclick="togglePanel(1)">
+      <div class="nav-icon purp">📝</div>
+      <div class="nav-text">
+        <div class="nav-title">他案件 勤怠報告<span class="nav-badge badge-purp" id="badge1" style="display:none">選択中</span></div>
+        <div class="nav-sub">JT以外の案件の勤怠を報告</div>
+      </div>
+      <div class="nav-chev" id="chev1">▼</div>
+    </div>
+    <div class="panel" id="panel1">
+      <div class="card purp">
+        <div class="card-title purp">勤務情報</div>
+        <div class="login-badge purp" id="loginBadge1"><span>👤</span><span id="loginName1">読み込み中…</span></div>
+        <div id="globalError1" class="global-error">入力に不備があります。確認してください。</div>
+        <div class="field">
+          <label for="f1_date">勤務日<span class="req">*</span></label>
+          <input type="date" id="f1_date">
+          <div class="field-error" id="err1_date">勤務日を選択してください</div>
+        </div>
+        <div class="field">
+          <label>ポジション<span class="req">*</span></label>
+          <div class="radio-group" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
+            <div class="radio-btn"><input type="radio" name="f1_pos" id="f1_pos_d" value="D" checked onchange="onPosChange()"><label for="f1_pos_d" class="purp-sel">D</label></div>
+            <div class="radio-btn"><input type="radio" name="f1_pos" id="f1_pos_ad" value="AD" onchange="onPosChange()"><label for="f1_pos_ad" class="purp-sel">AD</label></div>
+            <div class="radio-btn"><input type="radio" name="f1_pos" id="f1_pos_st" value="ST" onchange="onPosChange()"><label for="f1_pos_st" class="purp-sel">ST</label></div>
+            <div class="radio-btn"><input type="radio" name="f1_pos" id="f1_pos_ot" value="その他" onchange="onPosChange()"><label for="f1_pos_ot" class="purp-sel" style="font-size:13px;">その他</label></div>
+          </div>
+          <input type="text" id="f1_pos_other_txt" placeholder="その他の場合はこちらに記載" style="margin-top:8px;display:none;">
+          <div class="field-error" id="err1_pos_other">内容を入力してください</div>
+        </div>
+        <div class="time-row">
+          <div class="field">
+            <label>開始時間<span class="req">*</span></label>
+            <div class="time-inner">
+              <div><label>時</label><select id="f1_sh"></select></div>
+              <div><label>分</label><select id="f1_sm"><option value="">分</option><option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option></select></div>
+            </div>
+            <div class="field-error" id="err1_start">入力してください</div>
+          </div>
+          <div class="field">
+            <label>終了時間<span class="req">*</span></label>
+            <div class="time-inner">
+              <div><label>時</label><select id="f1_eh"></select></div>
+              <div><label>分</label><select id="f1_em"><option value="">分</option><option value="00">00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option></select></div>
+            </div>
+            <div class="field-error" id="err1_end">入力してください</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>交通費<span class="req">*</span></label>
+          <div class="hint purp">案件連絡時に交通費支給ありの場合のみ、ありでご入力ください</div>
+          <div class="radio-group">
+            <div class="radio-btn"><input type="radio" name="f1_fare" id="f1_fare_no" value="なし" checked onchange="onFareChange()"><label for="f1_fare_no" class="purp-sel">なし</label></div>
+            <div class="radio-btn"><input type="radio" name="f1_fare" id="f1_fare_yes" value="あり" onchange="onFareChange()"><label for="f1_fare_yes" class="purp-sel">あり</label></div>
+          </div>
+          <div class="cond-block" id="fareBlock">
+            <div class="cond-title">種別を選んでください</div>
+            <div class="radio-group">
+              <div class="radio-btn"><input type="radio" name="f1_ft" id="ft_j" value="実費" onchange="onFareTypeChange()"><label for="ft_j" class="purp-sel">実費</label></div>
+              <div class="radio-btn"><input type="radio" name="f1_ft" id="ft_i" value="一律" onchange="onFareTypeChange()"><label for="ft_i" class="purp-sel">一律</label></div>
+            </div>
+            <div id="jitsuBlock" style="display:none;flex-direction:column;gap:10px;">
+              <div class="field" style="margin-bottom:0;"><label style="font-size:12px;">区間（駅〜駅）</label><input type="text" id="f1_route" placeholder="例）梅田駅〜本町駅" style="font-size:14px;padding:10px 11px;"></div>
+              <div class="field" style="margin-bottom:0;"><label style="font-size:12px;">料金（円）</label><input type="number" id="f1_amount" placeholder="例）360" style="font-size:14px;padding:10px 11px;"></div>
+            </div>
+            <div id="ichiBlock" style="display:none;">
+              <div class="field" style="margin-bottom:0;"><label style="font-size:12px;">料金（円）</label><input type="number" id="f1_amount2" placeholder="例）500" style="font-size:14px;padding:10px 11px;margin-top:4px;"></div>
+            </div>
+          </div>
+        </div>
+        <button class="submit-btn purp" id="submitBtn1" type="button" onclick="submitForm1()">送信する</button>
+      </div>
+    </div>
+
+    <!-- ② 関西JT委託D -->
+    <div class="nav-card" id="nav2" onclick="togglePanel(2)">
+      <div class="nav-icon ygreen">🚬</div>
+      <div class="nav-text">
+        <div class="nav-title">関西JT 委託D報告<span class="nav-badge badge-ygreen" id="badge2" style="display:none">選択中</span></div>
+        <div class="nav-sub">備品受取・返却・運転</div>
+      </div>
+      <div class="nav-chev" id="chev2">▼</div>
+    </div>
+    <div class="panel" id="panel2">
+      <div class="card ygreen">
+        <div class="card-title ygreen">勤務情報</div>
+        <div class="login-badge ygreen" id="loginBadge2"><span>👤</span><span id="loginName2">読み込み中…</span></div>
+        <div id="globalError2" class="global-error">入力に不備があります。確認してください。</div>
+        <div class="field">
+          <label for="f2_date">勤務日<span class="req">*</span></label>
+          <input type="date" id="f2_date">
+          <div class="field-error" id="err2_date">勤務日を選択してください</div>
+        </div>
+        <div class="field">
+          <label>備品の受取<span class="req">*</span></label>
+          <div class="rcv-list">
+            <div class="rcv-btn sel" id="rcv1" onclick="selRcv(1,'受け取りなし')">
+              <span class="rcv-emoji">❎</span>
+              <div><div class="rcv-main">受け取りなし</div><div class="rcv-sub">受け取りしていない</div></div>
+            </div>
+            <div class="rcv-btn" id="rcv2" onclick="selRcv(2,'レンタカー屋ピック')">
+              <span class="rcv-emoji">🚘</span>
+              <div><div class="rcv-main">レンタカー屋ピック</div><div class="rcv-sub">レンタカー屋で車をピックして、事務所に受け取り</div></div>
+            </div>
+            <div class="rcv-btn" id="rcv3" onclick="selRcv(3,'事務所直行ピック')">
+              <span class="rcv-emoji">🏢</span>
+              <div><div class="rcv-main">事務所直行ピック</div><div class="rcv-sub">レンタカー屋には行かず、事務所に直行して受け取り</div></div>
+            </div>
+          </div>
+          <div class="field-error" id="err2_rcv">備品の受取を選択してください</div>
+        </div>
+        <div class="field">
+          <label>備品の返却<span class="req">*</span><span class="sub ygreen">事務所戻り</span></label>
+          <div class="radio-group">
+            <div class="radio-btn"><input type="radio" name="f2_ret" id="f2_ret_yes" value="あり" checked><label for="f2_ret_yes" class="ygreen-sel">あり</label></div>
+            <div class="radio-btn"><input type="radio" name="f2_ret" id="f2_ret_no" value="なし"><label for="f2_ret_no" class="ygreen-sel">なし</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>運転<span class="req">*</span></label>
+          <div class="radio-group">
+            <div class="radio-btn"><input type="radio" name="f2_drv" id="f2_drv_yes" value="あり" checked><label for="f2_drv_yes" class="ygreen-sel">あり</label></div>
+            <div class="radio-btn"><input type="radio" name="f2_drv" id="f2_drv_no" value="なし"><label for="f2_drv_no" class="ygreen-sel">なし</label></div>
+          </div>
+        </div>
+        <button class="submit-btn ygreen" id="submitBtn2" type="button" onclick="submitForm2()">送信する</button>
+      </div>
+    </div>
+
+    <!-- ③ 関西JT勤怠 -->
+    <div class="nav-card" id="nav3" onclick="togglePanel(3)">
+      <div class="nav-icon teal">🏪</div>
+      <div class="nav-text">
+        <div class="nav-title">関西JT 勤怠報告<span class="nav-badge badge-teal" id="badge3" style="display:none">選択中</span></div>
+        <div class="nav-sub">研修・事務所作業・JTプロモーション以外の案件</div>
+      </div>
+      <div class="nav-chev" id="chev3">▼</div>
+    </div>
+    <div class="panel" id="panel3">
+      <div class="card teal">
+        <div class="card-title teal">勤務情報</div>
+        <div class="login-badge teal" id="loginBadge3"><span>👤</span><span id="loginName3">読み込み中…</span></div>
+        <div id="globalError3" class="global-error">入力に不備があります。確認してください。</div>
+        <div class="field">
+          <label for="f3_date">勤務日<span class="req">*</span></label>
+          <input type="date" id="f3_date">
+          <div class="field-error" id="err3_date">勤務日を選択してください</div>
+        </div>
+        <div class="field">
+          <label>勤務内容<span class="req">*</span></label>
+          <div class="content-grid">
+            <div class="content-btn" onclick="selContent(this,'PL大阪')">PL大阪</div>
+            <div class="content-btn" onclick="selContent(this,'事務所作業')">事務所作業</div>
+            <div class="content-btn" onclick="selContent(this,'初回新人研修講師')">初回新人研修講師</div>
+            <div class="content-btn" onclick="selContent(this,'初回新人研修')">初回新人研修</div>
+            <div class="content-btn" onclick="selContent(this,'決済端末研修講師')">決済端末研修講師</div>
+            <div class="content-btn" onclick="selContent(this,'決済端末研修')">決済端末研修</div>
+            <div class="content-btn full" id="otherBtn" onclick="selContent(this,'その他')">その他</div>
+          </div>
+          <div class="other-block" id="otherBlock">
+            <input type="text" id="f3_other" placeholder="その他の場合はこちらに記載">
+          </div>
+          <div class="field-error" id="err3_content">勤務内容を選択してください</div>
+        </div>
+        <button class="submit-btn teal" id="submitBtn3" type="button" onclick="submitForm3()">送信する</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const LIFF_ID = '2010311386-f7zqGqdM';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyzs1maPVU0OwxNMhvm3_CnB3tuKX6rqrBtZqerthmiZxbN0bjtfJclXJLsPKbPqFXqgA/exec';
+
+let lineUserId   = '';
+let displayName  = '';
+let resolvedName = '';
+let selectedRcv  = '受け取りなし';
+let selectedContent = '';
+
+function setupHours() {
+  ['f1_sh','f1_eh'].forEach(id => {
+    const s = document.getElementById(id);
+    s.innerHTML = '<option value="">時</option>';
+    for (let h = 0; h <= 23; h++) {
+      const v = String(h).padStart(2,'0');
+      s.innerHTML += `<option value="${v}">${v}</option>`;
+    }
+  });
+}
+
+async function initLiff() {
   try {
-    const action = e.parameter.action || '';
-    if (action === 'getName') {
-      const name = resolveNameByLineId(e.parameter.userId || '');
-      output.setContent(JSON.stringify({ status: 'ok', name: name }));
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    const profile = await liff.getProfile();
+    lineUserId  = profile.userId;
+    displayName = profile.displayName;
+    const res  = await fetch(GAS_URL + '?action=getName&userId=' + encodeURIComponent(lineUserId));
+    const data = await res.json();
+    if (data.name) {
+      resolvedName = data.name;
+      setLoginText(resolvedName + ' としてログイン中', false);
     } else {
-      output.setContent(JSON.stringify({ status: 'ok', message: '関西勤怠報告GAS稼働中' }));
+      resolvedName = displayName;
+      setLoginText(displayName + '（未登録）', true);
     }
   } catch (err) {
-    output.setContent(JSON.stringify({ status: 'error', message: err.message }));
-  }
-  return output;
-}
-
-// ============================================================
-// doPost — フォーム送信受付
-// ============================================================
-function doPost(e) {
-  const output = ContentService.createTextOutput();
-  output.setMimeType(ContentService.MimeType.JSON);
-  try {
-    const payload = JSON.parse(e.postData ? e.postData.contents : '{}');
-    const action  = payload.action || '';
-    if (action === 'submitKintai') {
-      appendKintai(payload);
-      output.setContent(JSON.stringify({ status: 'ok' }));
-    } else if (action === 'submitDReport') {
-      appendDReport(payload);
-      output.setContent(JSON.stringify({ status: 'ok' }));
-    } else if (action === 'submitJTKintai') {
-      appendJTKintai(payload);
-      output.setContent(JSON.stringify({ status: 'ok' }));
-    } else {
-      output.setContent(JSON.stringify({ status: 'error', message: '不明なアクション: ' + action }));
-    }
-  } catch (err) {
-    output.setContent(JSON.stringify({ status: 'error', message: err.message }));
-  }
-  return output;
-}
-
-// ============================================================
-// resolveNameByLineId — LINE IDから氏名取得
-// ============================================================
-function resolveNameByLineId(userId) {
-  if (!userId) return null;
-  try {
-    const ss    = SpreadsheetApp.openById(MASTER_SS_ID);
-    const sheet = ss.getSheetByName(SHEET_LINEID);
-    if (!sheet) return null;
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return null;
-    const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
-    for (let i = 0; i < data.length; i++) {
-      if (data[i][1] === userId) return data[i][0] || null;
-    }
-    return null;
-  } catch (err) {
-    Logger.log('resolveNameByLineId error: ' + err.message);
-    return null;
+    console.error(err);
+    lineUserId   = 'DEV_USER';
+    displayName  = 'DEV_NAME';
+    resolvedName = 'テスト太郎';
+    setLoginText(resolvedName + ' としてログイン中', false);
+  } finally {
+    document.getElementById('loadingScreen').classList.add('hidden');
   }
 }
 
-// ============================================================
-// appendKintai — LINE_他案件勤怠 に書き込み
-// ============================================================
-function appendKintai(payload) {
-  const ss    = SpreadsheetApp.openById(NIYAMA_SS_ID);
-  let   sheet = ss.getSheetByName(SHEET_KINTAI);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_KINTAI);
-    const h = sheet.getRange(1, 1, 1, HEADERS_KINTAI.length);
-    h.setValues([HEADERS_KINTAI]);
-    h.setBackground('#C4A8D8'); h.setFontColor('#fff'); h.setFontWeight('bold');
-    sheet.setFrozenRows(1);
-  }
-  const row = [
-    formatJST(payload.timestamp),
-    payload.lineUserId  || '',
-    payload.displayName || '',
-    payload.staffName   || '',
-    payload.position    || '',
-    payload.date        || '',
-    payload.startTime   || '',
-    payload.endTime     || '',
-    payload.fare        || '',
-  ];
-  sheet.appendRow(row);
-  applyRowStyle(sheet, HEADERS_KINTAI.length, '#F5EEF9');
-}
-
-// ============================================================
-// appendDReport — LINE_関西JT委託D に書き込み
-// ============================================================
-function appendDReport(payload) {
-  const ss    = SpreadsheetApp.openById(NIYAMA_SS_ID);
-  let   sheet = ss.getSheetByName(SHEET_DREPORT);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_DREPORT);
-    const h = sheet.getRange(1, 1, 1, HEADERS_DREPORT.length);
-    h.setValues([HEADERS_DREPORT]);
-    h.setBackground('#7CCF50'); h.setFontColor('#fff'); h.setFontWeight('bold');
-    sheet.setFrozenRows(1);
-  }
-  const row = [
-    formatJST(payload.timestamp),
-    payload.lineUserId  || '',
-    payload.displayName || '',
-    payload.staffName   || '',
-    payload.date        || '',
-    payload.receive     || '',
-    payload.returnItem  || '',
-    payload.drive       || '',
-  ];
-  sheet.appendRow(row);
-  applyRowStyle(sheet, HEADERS_DREPORT.length, '#F0FAE8');
-}
-
-// ============================================================
-// appendJTKintai — LINE_関西JT勤怠 に書き込み
-// ============================================================
-function appendJTKintai(payload) {
-  const ss    = SpreadsheetApp.openById(NIYAMA_SS_ID);
-  let   sheet = ss.getSheetByName(SHEET_JTKINTAI);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_JTKINTAI);
-    const h = sheet.getRange(1, 1, 1, HEADERS_JTKINTAI.length);
-    h.setValues([HEADERS_JTKINTAI]);
-    h.setBackground('#4A9E8E'); h.setFontColor('#fff'); h.setFontWeight('bold');
-    sheet.setFrozenRows(1);
-  }
-  const row = [
-    formatJST(payload.timestamp),
-    payload.lineUserId   || '',
-    payload.displayName  || '',
-    payload.staffName    || '',
-    payload.date         || '',
-    payload.workContent  || '',
-  ];
-  sheet.appendRow(row);
-  applyRowStyle(sheet, HEADERS_JTKINTAI.length, '#E0F2F0');
-}
-
-// ============================================================
-// applyRowStyle — 交互背景色 & 初回自動列幅
-// ============================================================
-function applyRowStyle(sheet, colCount, evenColor) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow % 2 === 0) {
-    sheet.getRange(lastRow, 1, 1, colCount).setBackground(evenColor);
-  }
-  if (lastRow === 2) {
-    sheet.autoResizeColumns(1, colCount);
+function setLoginText(text, isErr) {
+  ['loginName1','loginName2','loginName3'].forEach(id => {
+    const t = document.getElementById(id);
+    if (t) t.textContent = text;
+  });
+  if (isErr) {
+    ['loginBadge1','loginBadge2','loginBadge3'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('purp','ygreen','teal');
+      el.classList.add('err');
+    });
   }
 }
 
-// ============================================================
-// formatJST — ISO文字列をJST日時文字列に変換
-// ============================================================
-function formatJST(isoString) {
-  if (!isoString) return '';
-  try {
-    const d   = new Date(isoString);
-    const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
-    const pad = n => String(n).padStart(2, '0');
-    return jst.getUTCFullYear() + '/' + pad(jst.getUTCMonth()+1) + '/' + pad(jst.getUTCDate())
-         + ' ' + pad(jst.getUTCHours()) + ':' + pad(jst.getUTCMinutes()) + ':' + pad(jst.getUTCSeconds());
-  } catch (e) {
-    return isoString;
+function togglePanel(n) {
+  [1,2,3].forEach(i => {
+    if (i === n) return;
+    document.getElementById('panel'+i).classList.remove('visible');
+    document.getElementById('nav'+i).classList.remove('open-purp','open-ygreen','open-teal');
+    document.getElementById('chev'+i).classList.remove('open');
+    document.getElementById('badge'+i).style.display = 'none';
+  });
+  const panel = document.getElementById('panel'+n);
+  const isOpen = panel.classList.contains('visible');
+  const cls = n===1?'open-purp': n===2?'open-ygreen':'open-teal';
+  if (isOpen) {
+    panel.classList.remove('visible');
+    document.getElementById('nav'+n).classList.remove(cls);
+    document.getElementById('chev'+n).classList.remove('open');
+    document.getElementById('badge'+n).style.display = 'none';
+  } else {
+    panel.classList.add('visible');
+    document.getElementById('nav'+n).classList.add(cls);
+    document.getElementById('chev'+n).classList.add('open');
+    document.getElementById('badge'+n).style.display = 'inline';
+    setTimeout(()=>document.getElementById('nav'+n).scrollIntoView({behavior:'smooth',block:'start'}),50);
   }
 }
+
+function onPosChange() {
+  const sel = document.querySelector('input[name="f1_pos"]:checked')?.value || '';
+  const txt = document.getElementById('f1_pos_other_txt');
+  txt.style.display = sel==='その他' ? 'block' : 'none';
+  if (sel !== 'その他') { txt.value = ''; txt.classList.remove('has-error'); document.getElementById('err1_pos_other').classList.remove('visible'); }
+}
+
+function onFareChange() {
+  const isYes = document.getElementById('f1_fare_yes').checked;
+  document.getElementById('fareBlock').classList.toggle('visible', isYes);
+  if (!isYes) {
+    document.querySelectorAll('input[name="f1_ft"]').forEach(r=>r.checked=false);
+    document.getElementById('jitsuBlock').style.display='none';
+    document.getElementById('ichiBlock').style.display='none';
+  }
+}
+function onFareTypeChange() {
+  document.getElementById('jitsuBlock').style.display = document.getElementById('ft_j').checked?'flex':'none';
+  document.getElementById('ichiBlock').style.display  = document.getElementById('ft_i').checked?'block':'none';
+}
+
+function selRcv(n, val) {
+  [1,2,3].forEach(i=>document.getElementById('rcv'+i).classList.toggle('sel', i===n));
+  selectedRcv = val;
+  document.getElementById('err2_rcv').classList.remove('visible');
+}
+
+function selContent(el, val) {
+  document.querySelectorAll('.content-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedContent = val;
+  document.getElementById('otherBlock').classList.toggle('visible', val==='その他');
+  document.getElementById('err3_content').classList.remove('visible');
+}
+
+function getPosition() {
+  const sel = document.querySelector('input[name="f1_pos"]:checked')?.value || '';
+  return sel === 'その他' ? (document.getElementById('f1_pos_other_txt').value.trim() || 'その他') : sel;
+}
+
+function submitForm1() {
+  let ok = true;
+  document.getElementById('globalError1').classList.remove('visible');
+  const d = document.getElementById('f1_date');
+  if (!d.value) { d.classList.add('has-error'); document.getElementById('err1_date').classList.add('visible'); ok=false; }
+  else { d.classList.remove('has-error'); document.getElementById('err1_date').classList.remove('visible'); }
+  const posVal = document.querySelector('input[name="f1_pos"]:checked')?.value || '';
+  if (posVal === 'その他') {
+    const otherTxt = document.getElementById('f1_pos_other_txt');
+    if (!otherTxt.value.trim()) { otherTxt.classList.add('has-error'); document.getElementById('err1_pos_other').classList.add('visible'); ok=false; }
+    else { otherTxt.classList.remove('has-error'); document.getElementById('err1_pos_other').classList.remove('visible'); }
+  }
+  const sh=document.getElementById('f1_sh').value, sm=document.getElementById('f1_sm').value;
+  const eh=document.getElementById('f1_eh').value, em=document.getElementById('f1_em').value;
+  if (!sh||!sm) { document.getElementById('err1_start').classList.add('visible'); ok=false; }
+  else { document.getElementById('err1_start').classList.remove('visible'); }
+  if (!eh||!em) { document.getElementById('err1_end').classList.add('visible'); ok=false; }
+  else { document.getElementById('err1_end').classList.remove('visible'); }
+  if (!ok) { document.getElementById('globalError1').classList.add('visible'); return; }
+
+  const fareChecked = document.querySelector('input[name="f1_fare"]:checked');
+  let fareDetail = fareChecked ? fareChecked.value : 'なし';
+  if (fareDetail === 'あり') {
+    const ft = document.querySelector('input[name="f1_ft"]:checked');
+    if (ft && ft.value === '実費') fareDetail = '実費 ' + (document.getElementById('f1_route').value||'') + ' ' + (document.getElementById('f1_amount').value||'') + '円';
+    else if (ft && ft.value === '一律') fareDetail = '一律 ' + (document.getElementById('f1_amount2').value||'') + '円';
+  }
+
+  const payload = {
+    action: 'submitKintai', lineUserId, displayName, staffName: resolvedName,
+    position: getPosition(), date: d.value,
+    startTime: sh+':'+sm, endTime: eh+':'+em,
+    fare: fareDetail, timestamp: new Date().toISOString(),
+  };
+  const btn = document.getElementById('submitBtn1');
+  btn.disabled=true; btn.textContent='送信中…';
+  sendToGas(payload, '他案件 勤怠報告', btn);
+}
+
+function submitForm2() {
+  let ok = true;
+  document.getElementById('globalError2').classList.remove('visible');
+  const d = document.getElementById('f2_date');
+  if (!d.value) { d.classList.add('has-error'); document.getElementById('err2_date').classList.add('visible'); ok=false; }
+  else { d.classList.remove('has-error'); document.getElementById('err2_date').classList.remove('visible'); }
+  if (!ok) { document.getElementById('globalError2').classList.add('visible'); return; }
+
+  const payload = {
+    action: 'submitDReport', lineUserId, displayName, staffName: resolvedName,
+    date: d.value, receive: selectedRcv,
+    returnItem: document.querySelector('input[name="f2_ret"]:checked')?.value || '',
+    drive: document.querySelector('input[name="f2_drv"]:checked')?.value || '',
+    timestamp: new Date().toISOString(),
+  };
+  const btn = document.getElementById('submitBtn2');
+  btn.disabled=true; btn.textContent='送信中…';
+  sendToGas(payload, '関西JT 委託D報告', btn);
+}
+
+function submitForm3() {
+  let ok = true;
+  document.getElementById('globalError3').classList.remove('visible');
+  const d = document.getElementById('f3_date');
+  if (!d.value) { d.classList.add('has-error'); document.getElementById('err3_date').classList.add('visible'); ok=false; }
+  else { d.classList.remove('has-error'); document.getElementById('err3_date').classList.remove('visible'); }
+  if (!selectedContent) { document.getElementById('err3_content').classList.add('visible'); ok=false; }
+  const otherTxt = document.getElementById('f3_other');
+  if (selectedContent==='その他' && !otherTxt.value.trim()) { otherTxt.classList.add('has-error'); ok=false; }
+  else { otherTxt.classList.remove('has-error'); }
+  if (!ok) { document.getElementById('globalError3').classList.add('visible'); return; }
+
+  const payload = {
+    action: 'submitJTKintai', lineUserId, displayName, staffName: resolvedName,
+    date: d.value,
+    workContent: selectedContent === 'その他' ? ('その他：' + otherTxt.value.trim()) : selectedContent,
+    timestamp: new Date().toISOString(),
+  };
+  const btn = document.getElementById('submitBtn3');
+  btn.disabled=true; btn.textContent='送信中…';
+  sendToGas(payload, '関西JT 勤怠報告', btn);
+}
+
+function sendToGas(payload, label, btn) {
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      document.getElementById('formWrap').style.display = 'none';
+      document.getElementById('successSub').textContent = label + 'の送信が完了しました。\nありがとうございます！';
+      document.getElementById('successScreen').classList.add('visible');
+    } else { throw new Error(data.message || 'error'); }
+  })
+  .catch(err => {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = '送信する';
+    alert('送信に失敗しました。再度お試しください。');
+  });
+}
+
+setupHours();
+initLiff();
+</script>
+</body>
+</html>
